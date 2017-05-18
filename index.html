@@ -5,18 +5,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width">
   <link href="snake.css" rel="stylesheet">
-  <script type="text/javascript" src="snake.js"></script>
+  <script type="text/javascript" src="snake.js" defer></script>
   <title>Snake Game</title>
 </head>
-<body>
+<body onload="game.start();">
   <div id="layout">
     <div id="scoreBoard"><span id="score">Score: 0</span><span id="lives">3 lives left</span><center id="title">Snake Game</center></div>
     <canvas id="myCan" width="800" height="600"></canvas>
     <div id="gameOver">Game Over</div>
     <div id="toast">Test message</div>
-    <script type="text/javascript">
-      game.start();
-    </script>
   </div>
 </body>
 </html>
