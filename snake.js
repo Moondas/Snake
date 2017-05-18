@@ -376,5 +376,3 @@ var game = {
     food.reset();
   }
 }
-
-game.start();
