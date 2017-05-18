@@ -306,7 +306,7 @@ window.onkeyup = function(ev){
       } else hud.msg.hide();
     }
       break;
-    default: alert(e.keyCode);
+    default: ;
   }
   
   if (36<e.keyCode && e.keyCode<41) {
