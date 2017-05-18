@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="description" content="Snake">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>JS Bin</title>
+<style id="jsbin-css">
+@import url('https://fonts.googleapis.com/css?family=Press+Start+2P');
+
+/* CSS reset */
+
+* {
+  box-sizing: border-box;
+  border: 0;
+  transition: all .5s;
+  /*overflow: hidden;*/
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #333;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Press Start 2P";
+  font-size: 80%;
+  text-shadow: 3px 3px 1px #000;
+}
+
+#myCan {
+  border: 1px solid;
+  background: darkgreen;
+  width: 100%;
+}
+
+#scoreBoard, #toast, #gameOver {
+  color: white;
+}
+
+#layout {  
+  background: #333;
+  clear: both;
+  position: relative;
+}
+
+#score, #lives, #gameOver {
+  display: none;
+}
+
+#scoreBoard {
+  background: #040;
+  padding: .3em .5em 0;
+  line-height: 1.5em;
+}
+
+#lives {
+  float: right;
+}
+
+#toast, #gameOver {
+  position: absolute;
+  text-align: center;  
+  left: 0;
+  right: 0;
+}
+
+#toast {
+  /*background: rgba(31,31,31,.8);*/
+  bottom: 2.25em;
+  padding: 5px 0;
+}
+
+#gameOver {
+  bottom: calc(50% - 48px);
+  font-size: 48px;
+}
+</style>
+</head>
+<body>
+  <div id="layout">
+    <div id="scoreBoard"><span id="score">Score: 0</span><span id="lives">3 lives left</span><center id="title">Snake Game</center></div>
+    <canvas id="myCan" width="800" height="600"></canvas>
+    <div id="gameOver">Game Over</div>
+    <div id="toast">Test message</div>
+  </div>
+<script id="jsbin-javascript">
+var can = document.getElementById("myCan"),
+    c = can.getContext('2d');
+
+/* Canvas dimensions */
+var cw = can.width,
+    ch = can.height,
+    
+    Step = {ver: 0, hor: 0};
+
+/* Base functions */
+function compObj(obj1, obj2){ // Compare two object
+  return (JSON.stringify(obj1) == JSON.stringify(obj2));
+}
+
+/* Board griding */
+var grid = {
+  size: 0,
+  
+  setSize: function(s){
+    this.size = s;
+    
+    Step.ver = parseInt(cw/s);
+    Step.hor = parseInt(ch/s);
+  },
+  getSize: function(){return this.size;},
+  setColor: function(color){c.strokeStyle = color;},
+  getColor: function(){return c.strokeStyle;},
+  getbgColor: function(){return can.style.backgroundColor;},
+  
+  draw: function(){
+    var size = this.getSize();
+    
+    c.beginPath();
+  
+    for(var x = 0; x <= Step.ver; x++) {
+      c.moveTo(size*x, 0);
+      c.lineTo(size*x, ch);
+    
+      for(var y = 0; y <= Step.hor; y++) {
+        c.moveTo(0, size*y);
+        c.lineTo(cw, size*y);
+      }
+    }
+    c.stroke();
+  },
+  clear: function(){
+    c.beginPath();
+    c.fillStyle = "darkgreen";
+    c.fillRect(0, 0, cw, ch);
+    c.stroke();
+  }
+}
+
+var hud = {
+  create: undefined,
+  lay: { // Layouts
+    addTo: function(layName, elm){},
+    delFrom: function(layName, elm){},
+    play: [
+      "score",
+      "lives"
+    ],
+    pause: [
+      "toast",
+      "legend"
+    ],
+    gOver: ["gameOver"]
+  },
+  getElm: function(elm){
+    return document.getElementById(elm);
+  },
+  setText: function(elm, txt){
+    elm.innerText = txt;
+  },
+  init: function(){
+    
+  },
+  msg: {
+    elm: "toast",
+    addText: function(txt){hud.getElm(this.elm).innerText=txt;},
+
+    show: function(){hud.show(this.elm);},
+    hide: function(){hud.hide(this.elm);}
+  },
+  score: {
+    elm: "score",
+    val: 0,
+    
+    add: function(inc){
+      this.val += inc;
+    },    
+    reset: function(){
+      this.val = 0;
+    }
+  },
+  lives: {
+    elm: "lives",
+    val: 3,
+    
+    dead: function(){
+      this.val -= 1;
+    },    
+    reset: function(){
+      this.val = 3;
+    }
+  },
+  show: function(elm){
+    if (Array.isArray(elm)) {
+      for (var i=0; i < elm.length;i++) {
+        this.getElm(elm[i]).style.display = "initial"
+      }
+    } else this.getElm(elm).style.display = "initial";
+  },
+  hide: function(elm){
+    if (Array.isArray(elm)) {
+      for (var i=0; i < elm.length;i++) {
+        this.getElm(elm[i]).style.display = "none"
+      }
+    } else this.getElm(elm).style.display = "none";
+  },
+}
+
+/* Snake */
+var snake = {
+  coords: Array(0),
+  afterCoord: {x:0, y:0},
+  direction: "",
+  isGrow: false,
+  //getLen: function(){return this.coords.length;},
+  init: function(){
+    this.coords = Array(0);
+    this.coords.push({x:parseInt(Step.ver/2),
+                      y:parseInt(Step.hor/2)});
+    this.draw();
+  },
+  setDir: function(dir){this.direction = dir;},
+  getDir: function(){return this.direction;},
+  find: function(coord){
+    return this.coords.findIndex(function(obj){
+      return (compObj(obj, coord));
+    });
+  },
+  bite: function(coord){
+    return this.coords.slice(1).findIndex(function(obj){
+      return (compObj(obj, coord));
+    });
+  },
+  move: function(direction){
+    var dir = direction || this.direction;
+    var coords = this.coords;
+    var head = coords[0];
+    //var prev = Object.assign({}, head), curr = {};
+    
+    switch(dir) {
+      /* Y axis */
+      case "up":    coords.unshift({x:head.x, y:head.y-1}); break; // Y-
+      case "down":  coords.unshift({x:head.x, y:head.y+1}); break; // Y+
+      /* X axis */
+      case "left":  coords.unshift({x:head.x-1, y:head.y}); break; // X-
+      case "right": coords.unshift({x:head.x+1, y:head.y}); break; // X+
+      default: ;
+    }
+    
+    /* Head on the food */
+    var index = food.find(head);
+    if (index > -1) {
+      food.eat(index);
+      
+      this.isGrow = true;
+            
+      food.place();
+    }
+    
+    /* Assign after snake coords */
+    if (!this.isGrow) this.afterCoord = coords.pop();
+      else this.isGrow = false;
+    
+    /* Bite yourself */    
+    if (this.bite(head)>0) {
+      game.end();
+    }
+    
+    /* Hit the wall */
+    if ((head.y < 0 || head.y >= Step.hor) ||
+        (head.x < 0 || head.x >= Step.ver)) {
+      dir = "";
+      game.end();
+    }
+    
+    this.setDir(dir);
+  },
+  draw: function() {
+    var head = this.coords[0];
+    
+    c.beginPath();
+    c.fillStyle = "#030";
+
+    // Draw Snake's head
+    c.fillRect(head.x*grid.getSize()+1,
+               head.y*grid.getSize()+1,
+               grid.getSize()-2,
+               grid.getSize()-2);
+
+    // Hide Snake's track
+    if (!this.isGrow) {
+      c.fillStyle = "darkgreen";
+      c.fillRect(this.afterCoord.x*grid.getSize()+1,
+                 this.afterCoord.y*grid.getSize()+1,
+                 grid.getSize()-2,
+                 grid.getSize()-2);
+    }
+    
+    c.stroke();
+  }
+}
+
+/* Food */
+var food = {
+  coords: Array(0),
+  find: function(coord){
+    return this.coords.findIndex(function(obj){
+      return (obj.x == coord.x && obj.y == coord.y);
+    });
+  },
+  add: function(coord){
+    return this.coords.push(coord)-1; // Return index of added element
+  },
+  eat: function(id){
+    this.coords.splice(id, 1);
+  },
+  reset: function(){
+    this.coords = Array(0);
+    this.place();
+  },
+  genRandCoord: function(){
+    var rand = function(max){return Math.floor((Math.random()*max));};
+
+    return {x:rand(Step.ver), y:rand(Step.hor)};
+  },
+  place: function(){
+    var coords = this.genRandCoord(),
+        pi = Math.PI,
+        r = grid.getSize()/2;
+
+    // Don't place food on snake
+    while (snake.find(coords)>-1) {
+      coords = this.genRandCoord();
+    }
+    
+    // Possible to add multiple food (future feature)
+    this.add(coords);
+
+    c.fillStyle = "#C00";
+
+    c.beginPath();
+    c.arc(coords.x*grid.getSize()+r, coords.y*grid.getSize()+r, r-1, 0,2*pi);
+    c.fill();
+    c.stroke();
+  }
+}
+
+/* Animation control */
+var anim = {
+  id: null,
+  speed: 250,
+  isPaused: true,
+  
+  setSpeed: function(spd){this.speed = spd;},
+  getSpeed: function(){return this.speed;},
+  play: function(){
+    if (!this.id) this.id = setInterval(function(){ // Prevent the rerun
+      snake.move();
+      snake.draw();
+    }, this.getSpeed());
+    this.isPaused = false;
+    return;
+  },
+  pause: function(){
+    clearInterval(this.id);
+    this.id = null;
+    this.isPaused = true;
+    return;
+  },
+  toggle: function(){
+    if (this.isPaused === true) this.play();
+      else this.pause();
+  }
+}
+
+window.onkeyup = function(ev){
+  /* Cross-browser event handling */
+  var e = ev || event || window.event;
+  var dir = snake.getDir();
+  
+  switch(e.keyCode){
+    /* Opposite direction test, because the snake "Never Back Down" =) */
+    case 38: if (dir !== "down")  dir = "up"; break;
+    case 40: if (dir !== "up")    dir = "down"; break;
+    case 37: if (dir !== "right") dir = "left"; break;
+    case 39: if (dir !== "left")  dir = "right"; break;
+    case 80: {
+      anim.toggle();
+      if (anim.isPaused) {
+        hud.msg.addText("Paused");
+        hud.msg.show();
+      } else hud.msg.hide();
+    }
+      break;
+    default: alert(e.keyCode);
+  }
+  
+  if (36<e.keyCode && e.keyCode<41) {
+    if (game.getStatus() == "end") game.reset(); else {
+      hud.msg.hide();
+
+      snake.setDir(dir);
+
+      game.play();
+    }
+  }
+}
+
+var game = {
+  status: "",
+  
+  setStatus: function(st){this.status = st;},
+  getStatus: function(){return this.status;},
+  
+  start: function(){ //Set up for first launch
+    this.setStatus("start");
+    // Grid
+    grid.setSize(25);
+    grid.setColor("#333");
+    grid.draw();
+    
+    // Hud
+    hud.msg.addText("Press cursor keys to begin");
+    
+    // Snake
+    snake.init();
+    
+    // Food
+    food.place();
+  },
+  play: function(){
+    // Hud
+    /*hud.hide("title");
+    hud.show(hud.lay.play);*/
+    
+    // Let's move
+    anim.play();
+  },
+  end: function(){
+    this.setStatus("end");
+    // Hud
+    hud.show("gameOver");
+    
+    // Stop animation
+    anim.pause();
+  },
+  reset: function(){
+    this.setStatus("reset");
+    // Grid (clean up)
+    grid.clear();
+    grid.draw();
+    
+    // Hud
+    hud.hide("gameOver");
+    hud.msg.addText("Press cursor keys to begin");
+    hud.msg.show();
+    
+    // Snake
+    snake.init();
+    
+    // Food
+    food.reset();
+  }
+}
+
+game.start();
+</script>
+
+
+<script id="jsbin-source-css" type="text/css">@import url('https://fonts.googleapis.com/css?family=Press+Start+2P');
+
+/* CSS reset */
+
+* {
+  box-sizing: border-box;
+  border: 0;
+  transition: all .5s;
+  /*overflow: hidden;*/
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #333;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Press Start 2P";
+  font-size: 80%;
+  text-shadow: 3px 3px 1px #000;
+}
+
+#myCan {
+  border: 1px solid;
+  background: darkgreen;
+  width: 100%;
+}
+
+#scoreBoard, #toast, #gameOver {
+  color: white;
+}
+
+#layout {  
+  background: #333;
+  clear: both;
+  position: relative;
+}
+
+#score, #lives, #gameOver {
+  display: none;
+}
+
+#scoreBoard {
+  background: #040;
+  padding: .3em .5em 0;
+  line-height: 1.5em;
+}
+
+#lives {
+  float: right;
+}
+
+#toast, #gameOver {
+  position: absolute;
+  text-align: center;  
+  left: 0;
+  right: 0;
+}
+
+#toast {
+  /*background: rgba(31,31,31,.8);*/
+  bottom: 2.25em;
+  padding: 5px 0;
+}
+
+#gameOver {
+  bottom: calc(50% - 48px);
+  font-size: 48px;
+}</script>
+
+<script id="jsbin-source-javascript" type="text/javascript">var can = document.getElementById("myCan"),
+    c = can.getContext('2d');
+
+/* Canvas dimensions */
+var cw = can.width,
+    ch = can.height,
+    
+    Step = {ver: 0, hor: 0};
+
+/* Base functions */
+function compObj(obj1, obj2){ // Compare two object
+  return (JSON.stringify(obj1) == JSON.stringify(obj2));
+}
+
+/* Board griding */
+var grid = {
+  size: 0,
+  
+  setSize: function(s){
+    this.size = s;
+    
+    Step.ver = parseInt(cw/s);
+    Step.hor = parseInt(ch/s);
+  },
+  getSize: function(){return this.size;},
+  setColor: function(color){c.strokeStyle = color;},
+  getColor: function(){return c.strokeStyle;},
+  getbgColor: function(){return can.style.backgroundColor;},
+  
+  draw: function(){
+    var size = this.getSize();
+    
+    c.beginPath();
+  
+    for(var x = 0; x <= Step.ver; x++) {
+      c.moveTo(size*x, 0);
+      c.lineTo(size*x, ch);
+    
+      for(var y = 0; y <= Step.hor; y++) {
+        c.moveTo(0, size*y);
+        c.lineTo(cw, size*y);
+      }
+    }
+    c.stroke();
+  },
+  clear: function(){
+    c.beginPath();
+    c.fillStyle = "darkgreen";
+    c.fillRect(0, 0, cw, ch);
+    c.stroke();
+  }
+}
+
+var hud = {
+  create: undefined,
+  lay: { // Layouts
+    addTo: function(layName, elm){},
+    delFrom: function(layName, elm){},
+    play: [
+      "score",
+      "lives"
+    ],
+    pause: [
+      "toast",
+      "legend"
+    ],
+    gOver: ["gameOver"]
+  },
+  getElm: function(elm){
+    return document.getElementById(elm);
+  },
+  setText: function(elm, txt){
+    elm.innerText = txt;
+  },
+  init: function(){
+    
+  },
+  msg: {
+    elm: "toast",
+    addText: function(txt){hud.getElm(this.elm).innerText=txt;},
+
+    show: function(){hud.show(this.elm);},
+    hide: function(){hud.hide(this.elm);}
+  },
+  score: {
+    elm: "score",
+    val: 0,
+    
+    add: function(inc){
+      this.val += inc;
+    },    
+    reset: function(){
+      this.val = 0;
+    }
+  },
+  lives: {
+    elm: "lives",
+    val: 3,
+    
+    dead: function(){
+      this.val -= 1;
+    },    
+    reset: function(){
+      this.val = 3;
+    }
+  },
+  show: function(elm){
+    if (Array.isArray(elm)) {
+      for (var i=0; i < elm.length;i++) {
+        this.getElm(elm[i]).style.display = "initial"
+      }
+    } else this.getElm(elm).style.display = "initial";
+  },
+  hide: function(elm){
+    if (Array.isArray(elm)) {
+      for (var i=0; i < elm.length;i++) {
+        this.getElm(elm[i]).style.display = "none"
+      }
+    } else this.getElm(elm).style.display = "none";
+  },
+}
+
+/* Snake */
+var snake = {
+  coords: Array(0),
+  afterCoord: {x:0, y:0},
+  direction: "",
+  isGrow: false,
+  //getLen: function(){return this.coords.length;},
+  init: function(){
+    this.coords = Array(0);
+    this.coords.push({x:parseInt(Step.ver/2),
+                      y:parseInt(Step.hor/2)});
+    this.draw();
+  },
+  setDir: function(dir){this.direction = dir;},
+  getDir: function(){return this.direction;},
+  find: function(coord){
+    return this.coords.findIndex(function(obj){
+      return (compObj(obj, coord));
+    });
+  },
+  bite: function(coord){
+    return this.coords.slice(1).findIndex(function(obj){
+      return (compObj(obj, coord));
+    });
+  },
+  move: function(direction){
+    var dir = direction || this.direction;
+    var coords = this.coords;
+    var head = coords[0];
+    //var prev = Object.assign({}, head), curr = {};
+    
+    switch(dir) {
+      /* Y axis */
+      case "up":    coords.unshift({x:head.x, y:head.y-1}); break; // Y-
+      case "down":  coords.unshift({x:head.x, y:head.y+1}); break; // Y+
+      /* X axis */
+      case "left":  coords.unshift({x:head.x-1, y:head.y}); break; // X-
+      case "right": coords.unshift({x:head.x+1, y:head.y}); break; // X+
+      default: ;
+    }
+    
+    /* Head on the food */
+    var index = food.find(head);
+    if (index > -1) {
+      food.eat(index);
+      
+      this.isGrow = true;
+            
+      food.place();
+    }
+    
+    /* Assign after snake coords */
+    if (!this.isGrow) this.afterCoord = coords.pop();
+      else this.isGrow = false;
+    
+    /* Bite yourself */    
+    if (this.bite(head)>0) {
+      game.end();
+    }
+    
+    /* Hit the wall */
+    if ((head.y < 0 || head.y >= Step.hor) ||
+        (head.x < 0 || head.x >= Step.ver)) {
+      dir = "";
+      game.end();
+    }
+    
+    this.setDir(dir);
+  },
+  draw: function() {
+    var head = this.coords[0];
+    
+    c.beginPath();
+    c.fillStyle = "#030";
+
+    // Draw Snake's head
+    c.fillRect(head.x*grid.getSize()+1,
+               head.y*grid.getSize()+1,
+               grid.getSize()-2,
+               grid.getSize()-2);
+
+    // Hide Snake's track
+    if (!this.isGrow) {
+      c.fillStyle = "darkgreen";
+      c.fillRect(this.afterCoord.x*grid.getSize()+1,
+                 this.afterCoord.y*grid.getSize()+1,
+                 grid.getSize()-2,
+                 grid.getSize()-2);
+    }
+    
+    c.stroke();
+  }
+}
+
+/* Food */
+var food = {
+  coords: Array(0),
+  find: function(coord){
+    return this.coords.findIndex(function(obj){
+      return (obj.x == coord.x && obj.y == coord.y);
+    });
+  },
+  add: function(coord){
+    return this.coords.push(coord)-1; // Return index of added element
+  },
+  eat: function(id){
+    this.coords.splice(id, 1);
+  },
+  reset: function(){
+    this.coords = Array(0);
+    this.place();
+  },
+  genRandCoord: function(){
+    var rand = function(max){return Math.floor((Math.random()*max));};
+
+    return {x:rand(Step.ver), y:rand(Step.hor)};
+  },
+  place: function(){
+    var coords = this.genRandCoord(),
+        pi = Math.PI,
+        r = grid.getSize()/2;
+
+    // Don't place food on snake
+    while (snake.find(coords)>-1) {
+      coords = this.genRandCoord();
+    }
+    
+    // Possible to add multiple food (future feature)
+    this.add(coords);
+
+    c.fillStyle = "#C00";
+
+    c.beginPath();
+    c.arc(coords.x*grid.getSize()+r, coords.y*grid.getSize()+r, r-1, 0,2*pi);
+    c.fill();
+    c.stroke();
+  }
+}
+
+/* Animation control */
+var anim = {
+  id: null,
+  speed: 250,
+  isPaused: true,
+  
+  setSpeed: function(spd){this.speed = spd;},
+  getSpeed: function(){return this.speed;},
+  play: function(){
+    if (!this.id) this.id = setInterval(function(){ // Prevent the rerun
+      snake.move();
+      snake.draw();
+    }, this.getSpeed());
+    this.isPaused = false;
+    return;
+  },
+  pause: function(){
+    clearInterval(this.id);
+    this.id = null;
+    this.isPaused = true;
+    return;
+  },
+  toggle: function(){
+    if (this.isPaused === true) this.play();
+      else this.pause();
+  }
+}
+
+window.onkeyup = function(ev){
+  /* Cross-browser event handling */
+  var e = ev || event || window.event;
+  var dir = snake.getDir();
+  
+  switch(e.keyCode){
+    /* Opposite direction test, because the snake "Never Back Down" =) */
+    case 38: if (dir !== "down")  dir = "up"; break;
+    case 40: if (dir !== "up")    dir = "down"; break;
+    case 37: if (dir !== "right") dir = "left"; break;
+    case 39: if (dir !== "left")  dir = "right"; break;
+    case 80: {
+      anim.toggle();
+      if (anim.isPaused) {
+        hud.msg.addText("Paused");
+        hud.msg.show();
+      } else hud.msg.hide();
+    }
+      break;
+    default: alert(e.keyCode);
+  }
+  
+  if (36<e.keyCode && e.keyCode<41) {
+    if (game.getStatus() == "end") game.reset(); else {
+      hud.msg.hide();
+
+      snake.setDir(dir);
+
+      game.play();
+    }
+  }
+}
+
+var game = {
+  status: "",
+  
+  setStatus: function(st){this.status = st;},
+  getStatus: function(){return this.status;},
+  
+  start: function(){ //Set up for first launch
+    this.setStatus("start");
+    // Grid
+    grid.setSize(25);
+    grid.setColor("#333");
+    grid.draw();
+    
+    // Hud
+    hud.msg.addText("Press cursor keys to begin");
+    
+    // Snake
+    snake.init();
+    
+    // Food
+    food.place();
+  },
+  play: function(){
+    // Hud
+    /*hud.hide("title");
+    hud.show(hud.lay.play);*/
+    
+    // Let's move
+    anim.play();
+  },
+  end: function(){
+    this.setStatus("end");
+    // Hud
+    hud.show("gameOver");
+    
+    // Stop animation
+    anim.pause();
+  },
+  reset: function(){
+    this.setStatus("reset");
+    // Grid (clean up)
+    grid.clear();
+    grid.draw();
+    
+    // Hud
+    hud.hide("gameOver");
+    hud.msg.addText("Press cursor keys to begin");
+    hud.msg.show();
+    
+    // Snake
+    snake.init();
+    
+    // Food
+    food.reset();
+  }
+}
+
+game.start();</script></body>
+</html>
