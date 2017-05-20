@@ -3,10 +3,9 @@
 /* CSS reset */
 
 * {
-  box-sizing: border-box;
   border: 0;
-  transition: all .5s;
-  /*overflow: hidden;*/
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 html, body {
@@ -14,21 +13,39 @@ html, body {
   padding: 0;
 }
 
+/* Base Styles*/
 body {
-  background: #333;
   height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: "Press Start 2P";
-  font-size: 80%;
-  text-shadow: 3px 3px 1px #000;
+  animation: body 1.5s forwards;
+}
+
+@keyframes body {
+  33%, 100% {
+    font-size: 80%;
+  }
+  100% {
+    background: #333;
+    text-shadow: 3px 3px 5px #333;
+  }
 }
 
 #myCan {
-  border: 1px solid;
-  background: darkgreen;
   width: 100%;
+  border: 1px solid;
+  animation: myCan .8s forwards;
+}
+
+@keyframes myCan {
+  0% {
+    background: white;
+  }
+  100% {
+    background: darkgreen;
+  }
 }
 
 #scoreBoard, #toast, #gameOver {
@@ -63,7 +80,6 @@ body {
 }
 
 #toast {
-  /*background: rgba(31,31,31,.8);*/
   bottom: 2.25em;
   padding: 5px 0;
 }
