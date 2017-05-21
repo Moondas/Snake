@@ -7,6 +7,7 @@ Simple Snake Game
 - HTML5
   - Canvas
 - CSS3
+  - Web Font
 - JavaScript
   - OOP
 - JSBin
