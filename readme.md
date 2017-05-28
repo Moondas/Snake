@@ -13,9 +13,9 @@ Simple Snake Game
 - JSBin
 
 ## Controls
-Arrow keys for control the direction of snake
+<kbd>&larr;</kbd><kbd>&uarr;</kbd><kbd>&darr;</kbd><kbd>&rarr;</kbd> Arrow keys for control the direction of snake
 
-"P" key for toggle Play/Pause
+<kbd>P</kbd> key for toggle Play/Pause
 
 ## Live preview available at
 https://moondas.github.io/Snake
