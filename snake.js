@@ -51,6 +51,7 @@ var grid = {
   }
 }
 
+/* On-screen user interface */
 var hud = {
   create: undefined,
   lay: { // Layouts
@@ -88,9 +89,14 @@ var hud = {
     
     add: function(inc){
       this.val += inc;
+      this.print();
     },    
     reset: function(){
       this.val = 0;
+      this.print();
+    },
+    print: function() {
+      hud.getElm("score").innerText = "Score: " + this.val;
     }
   },
   lives: {
@@ -99,9 +105,14 @@ var hud = {
     
     dead: function(){
       this.val -= 1;
+      this.print();
     },    
     reset: function(){
       this.val = 3;
+      this.print();
+    },
+    print: function() {
+      hud.getElm("lives").innerText = this.val + ' lives left';
     }
   },
   show: function(elm){
@@ -167,6 +178,8 @@ var snake = {
       food.eat(index);
       
       this.isGrow = true;
+      
+      hud.score.add(10);
             
       food.place();
     }
@@ -306,7 +319,7 @@ window.onkeyup = function(ev){
       } else hud.msg.hide();
     }
       break;
-    default: ;
+    /*default: alert(e.keyCode);*/
   }
   
   if (36<e.keyCode && e.keyCode<41) {
@@ -344,8 +357,8 @@ var game = {
   },
   play: function(){
     // Hud
-    /*hud.hide("title");
-    hud.show(hud.lay.play);*/
+    hud.hide("title");
+    hud.show(hud.lay.play);
     
     // Let's move
     anim.play();
@@ -354,6 +367,7 @@ var game = {
     this.setStatus("end");
     // Hud
     hud.show("gameOver");
+    hud.lives.dead();
     
     // Stop animation
     anim.pause();
@@ -368,6 +382,10 @@ var game = {
     hud.hide("gameOver");
     hud.msg.addText("Press cursor keys to begin");
     hud.msg.show();
+    if (hud.lives.val === 0) {
+      hud.lives.reset();
+      hud.score.reset();
+    }
     
     // Snake
     snake.init();
