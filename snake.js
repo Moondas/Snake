@@ -160,7 +160,6 @@ var snake = {
     var dir = direction || this.direction;
     var coords = this.coords;
     var head = coords[0];
-    //var prev = Object.assign({}, head), curr = {};
     
     switch(dir) {
       /* Y axis */
@@ -171,6 +170,9 @@ var snake = {
       case "right": coords.unshift({x:head.x+1, y:head.y}); break; // X+
       default: ;
     }
+    
+    // Update head after step
+    head = coords[0];
     
     /* Head on the food */
     var index = food.find(head);
@@ -188,8 +190,8 @@ var snake = {
     if (!this.isGrow) this.afterCoord = coords.pop();
       else this.isGrow = false;
     
-    /* Bite yourself */    
-    if (this.bite(head)>0) {
+    /* Bite yourself */
+    if (this.bite(head)>-1) {
       game.end();
     }
     
