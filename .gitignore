@@ -1,2 +1,6 @@
+.vscode/
 node_modules/
+scripts/*
+!scripts/*.ts
+!scripts/config.js
 package-lock.json

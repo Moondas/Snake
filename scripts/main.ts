@@ -1,151 +1,47 @@
-var can = <HTMLCanvasElement>document.getElementById("myCan"),
-  c = can.getContext('2d');
+import { grid, hud } from "./display";
+import { Coord } from "./types";
+export var canvas = <HTMLCanvasElement>document.getElementById("myCan");
+export var context = <CanvasRenderingContext2D>canvas.getContext('2d');
 
 /* Canvas dimensions */
-var cw = can.width,
-  ch = can.height,
-  Step = { ver: 0, hor: 0 };
+export var stepping = { ver: 50, hor: 0 };
 
 /* Base functions */
-function compObj(obj1, obj2) { // Compare two object
+/* Compare two object */
+export function isSameTwoObjects(obj1: Object, obj2: Object) {
   return (JSON.stringify(obj1) == JSON.stringify(obj2));
 }
 
-/* Board griding */
-var grid = {
-  size: 0,
-  setSize: function(s) {
-    this.size = s;
-    Step.ver = Math.trunc(cw / s);
-    Step.hor = Math.trunc(ch / s);
-  },
-  getSize: function() { return this.size; },
-  setColor: function(color) { c.strokeStyle = color; },
-  getColor: function() { return c.strokeStyle; },
-  getbgColor: function() { return can.style.backgroundColor; },
-  draw: function() {
-    var size = this.getSize();
-    c.beginPath();
-    for (var x = 0; x <= Step.ver; x++) {
-      c.moveTo(size * x, 0);
-      c.lineTo(size * x, ch);
-      for (var y = 0; y <= Step.hor; y++) {
-        c.moveTo(0, size * y);
-        c.lineTo(cw, size * y);
-      }
-    }
-    c.stroke();
-  },
-  clear: function() {
-    c.beginPath();
-    c.fillStyle = "darkgreen";
-    c.fillRect(0, 0, cw, ch);
-    c.stroke();
-  }
-}
-
-/* On-screen user interface */
-var hud = {
-  create: undefined,
-  lay: { // Layouts
-    play: [
-      "score",
-      "lives"
-    ],
-    pause: [
-      "toast",
-      "legend"
-    ],
-    gOver: ["gameOver"]
-  },
-  getElm: function(elm) {
-    return document.getElementById(elm);
-  },
-  setText: function(elm, txt) {
-    elm.innerText = txt;
-  },
-  msg: {
-    elm: "toast",
-    addText: function(txt) { hud.getElm(this.elm).innerText = txt; },
-    show: function() { hud.show(this.elm); },
-    hide: function() { hud.hide(this.elm); }
-  },
-  score: {
-    elm: "score",
-    val: 0,
-    add: function(inc) {
-      this.val += inc;
-      this.print();
-    },
-    reset: function() {
-      this.val = 0;
-      this.print();
-    },
-    print: function() {
-      hud.getElm("score").innerText = "Score: " + this.val;
-    }
-  },
-  lives: {
-    elm: "lives",
-    val: 3,
-    dead: function() {
-      this.val -= 1;
-      this.print();
-    },
-    reset: function() {
-      this.val = 3;
-      this.print();
-    },
-    print: function() {
-      hud.getElm("lives").innerText = this.val + ' lives left';
-    }
-  },
-  show: function(elm) {
-    if (Array.isArray(elm)) {
-      for (var i = 0; i < elm.length; i++) {
-        this.getElm(elm[i]).style.display = "initial"
-      }
-    } else this.getElm(elm).style.display = "initial";
-  },
-  hide: function(elm) {
-    if (Array.isArray(elm)) {
-      for (var i = 0; i < elm.length; i++) {
-        this.getElm(elm[i]).style.display = "none"
-      }
-    } else this.getElm(elm).style.display = "none";
-  },
-}
-
 /* Snake */
-var snake = {
+export var snake = {
   coords: Array(0),
   afterCoord: { x: 0, y: 0 },
   direction: "",
   isGrow: false,
-  init: function() {
-    this.coords = Array(0);
-    this.coords.push({
-      x: Math.trunc(Step.ver / 2),
-      y: Math.trunc(Step.hor / 2)
+  init: function(): void {
+    snake.coords = Array(0);
+    snake.coords.push({
+      x: Math.trunc(stepping.ver / 2),
+      y: Math.trunc(stepping.hor / 2)
     });
-    this.draw();
+    snake.draw();
   },
-  setDir: function(dir) { this.direction = dir; },
-  getDir: function() { return this.direction; },
-  find: function(coord) {
-    return this.coords.findIndex(function(obj) {
-      return compObj(obj, coord);
+  setDir: (dir: string): string => snake.direction = dir,
+  getDir: (): string => snake.direction,
+  find: function(coord: Coord): number {
+    return snake.coords.findIndex(
+      (obj): boolean => isSameTwoObjects(obj, coord)
+    );
+  },
+  bite: function(coord: Coord): number {
+    return snake.coords.slice(1).findIndex(function(obj) {
+      return (isSameTwoObjects(obj, coord));
     });
   },
-  bite: function(coord) {
-    return this.coords.slice(1).findIndex(function (obj) {
-      return (compObj(obj, coord));
-    });
-  },
-  move: function(direction?) {
-    var dir = direction || this.direction;
-    var coords = this.coords;
-    var head = coords[0];
+  move: function(direction?: string): void {
+    let dir = direction || snake.direction;
+    let coords = snake.coords;
+    let head = coords[0];
 
     switch (dir) {
       /* Y axis */
@@ -161,135 +57,129 @@ var snake = {
     head = coords[0];
 
     /* Head on the food */
-    var index = food.find(head);
+    let index = food.find(head);
     if (index > -1) {
       food.eat(index);
-
-      this.isGrow = true;
-
+      snake.isGrow = true;
       hud.score.add(10);
-
       food.place();
     }
 
     /* Assign after snake coords */
-    if (!this.isGrow) this.afterCoord = coords.pop();
-    else this.isGrow = false;
+    if (!snake.isGrow) {
+      snake.afterCoord = coords.pop();
+    } else {
+      snake.isGrow = false;
+    }
 
     /* Bite himself */
-    if (this.bite(head) > -1) {
+    if (snake.bite(head) > -1) {
       game.end();
     }
 
     /* Hit the wall */
-    if ((head.y < 0 || head.y >= Step.hor) ||
-      (head.x < 0 || head.x >= Step.ver)) {
+    if ((head.y < 0 || head.y >= stepping.hor) ||
+      (head.x < 0 || head.x >= stepping.ver)) {
       dir = "";
       game.end();
     }
-
-    this.setDir(dir);
+    snake.setDir(dir);
   },
-  draw: function() {
-    var head = this.coords[0];
-    c.beginPath();
-    c.fillStyle = "#030";
+  draw: function(): void {    
+    let head = snake.coords[0];
+    context.beginPath();
+    context.fillStyle = "#030";
 
     // Draw Snake's head
-    c.fillRect(head.x * grid.getSize() + 1,
+    context.fillRect(head.x * grid.getSize() + 1,
       head.y * grid.getSize() + 1,
       grid.getSize() - 2,
       grid.getSize() - 2);
 
     // Hide Snake's track
-    if (!this.isGrow) {
-      c.fillStyle = "darkgreen";
-      c.fillRect(this.afterCoord.x * grid.getSize() + 1,
-        this.afterCoord.y * grid.getSize() + 1,
+    if (!snake.isGrow) {
+      context.fillStyle = "darkgreen";
+      context.fillRect(snake.afterCoord.x * grid.getSize() + 1,
+        snake.afterCoord.y * grid.getSize() + 1,
         grid.getSize() - 2,
         grid.getSize() - 2);
     }
-    c.stroke();
+    context.stroke();
   }
 }
 
 /* Food */
-var food = {
-  coords: Array(0),
-  find: function (coord) {
-    return this.coords.findIndex(function (obj) {
-      return (obj.x == coord.x && obj.y == coord.y);
+export var food = {
+  coords: [],
+  find: (coord: Coord): number => {
+    return food.coords.findIndex(function(obj: Coord) {
+      return isSameTwoObjects(coord, obj);
     });
   },
-  add: function(coord) {
-    return this.coords.push(coord) - 1; // Return index of added element
+  add: (coord: Coord): any => food.coords.push(<never>coord) - 1, // Return index of added element
+  eat: (id: number): void => { food.coords.splice(id, 1) },
+  reset: function(): void {
+    food.coords = [];
+    food.place();
   },
-  eat: function(id) {
-    this.coords.splice(id, 1);
-  },
-  reset: function() {
-    this.coords = Array(0);
-    this.place();
-  },
-  genRandCoord: function() {
-    var rand = function (max) { return Math.floor((Math.random() * max)); };
-    return { x: rand(Step.ver), y: rand(Step.hor) };
+  genRandCoord: function(): Coord {
+    let rand = function(max: number) { return Math.floor((Math.random() * max)); };
+    return { x: rand(stepping.ver), y: rand(stepping.hor) };
   },
   place: function() {
-    var coords = this.genRandCoord(),
-      pi = Math.PI,
-      r = grid.getSize() / 2;
+    let coords = food.genRandCoord();
+    let pi = Math.PI;
+    let r = grid.getSize() / 2;
 
     // Don't place food on snake
     while (snake.find(coords) > -1) {
-      coords = this.genRandCoord();
+      coords = food.genRandCoord();
     }
 
     // Possible to add multiple food (future feature)
-    this.add(coords);
+    food.add(coords);
 
-    c.fillStyle = "#C00";
-
-    c.beginPath();
-    c.arc(coords.x * grid.getSize() + r, coords.y * grid.getSize() + r, r - 1, 0, 2 * pi);
-    c.fill();
-    c.stroke();
+    context.fillStyle = "#C00";
+    context.beginPath();
+    context.arc(coords.x * grid.getSize() + r, coords.y * grid.getSize() + r, r - 1, 0, 2 * pi);
+    context.fill();
+    context.stroke();
   }
 }
 
 /* Animation control */
-var anim = {
-  id: null,
+export var anim = {
+  id: -1,
   speed: 250,
   isPaused: true,
-  setSpeed: function(spd) { this.speed = spd; },
-  getSpeed: function() { return this.speed; },
-  play: function () {
-    if (!this.id) this.id = setInterval(function () { // Prevent the rerun
+  setSpeed: (speed: number) => anim.speed = speed,
+  getSpeed: () => anim.speed,
+  play: function() {
+    if (anim.id == -1) anim.id = setInterval(function() { // Prevent the rerun
       snake.move();
       snake.draw();
-    }, this.getSpeed());
-    this.isPaused = false;
+    }, anim.getSpeed());
+    anim.isPaused = false;
     return;
   },
   pause: function() {
-    clearInterval(this.id);
-    this.id = null;
-    this.isPaused = true;
+    clearInterval(anim.id);
+    anim.id = -1;
+    anim.isPaused = true;
     return;
   },
   toggle: function() {
-    if (this.isPaused === true) this.play();
-    else this.pause();
+    if (anim.isPaused === true) anim.play();
+    else anim.pause();
   }
 }
 
-window.onkeyup = function(event: KeyboardEvent) {
+window.onkeyup = function(event: KeyboardEvent): void {
   /* Cross-browser event handling */
-  var e: KeyboardEvent = event || <KeyboardEvent>window.event;
-  var dir = snake.getDir();
+  event = event || <KeyboardEvent>window.event;
+  let dir = snake.getDir();
 
-  switch(e.keyCode) {
+  switch(event.keyCode) {
     /* Opposite direction test, because the snake "Never Back Down" =) */
     case 38: if (dir !== "down") dir = "up"; break;
     case 40: if (dir !== "up") dir = "down"; break;
@@ -298,82 +188,73 @@ window.onkeyup = function(event: KeyboardEvent) {
     case 80: {
       anim.toggle();
       if (anim.isPaused) {
-        hud.msg.addText("Paused");
-        hud.msg.show();
-      } else hud.msg.hide();
+        hud.message.addText("Paused");
+        hud.message.show();
+      } else hud.message.hide();
     }
     break;
   }
 
-  if (36 < e.keyCode && e.keyCode < 41) {
-    if (game.getStatus() == "end") game.reset(); else {
-      hud.msg.hide();
-
+  if (36 < event.keyCode && event.keyCode < 41) {
+    if (game.getStatus() == "end") {
+      game.reset();
+    } else {
+      hud.message.hide();
       snake.setDir(dir);
-
       game.play();
     }
   }
 }
 
-var game = {
+export var game = {
   status: "",
-
-  setStatus: function(st) { this.status = st; },
-  getStatus: function() { return this.status; },
-
+  setStatus: (status: string) => game.status = status,
+  getStatus: () => game.status,
   start: function() { //Set up for first launch
-    this.setStatus("start");
+    game.setStatus("start");
     // Grid
     grid.setSize(25);
     grid.setColor("#333");
     grid.draw();
-
     // Hud
-    hud.msg.addText("Press cursor keys to begin");
-
+    hud.message.addText("Press cursor keys to begin");
     // Snake
     snake.init();
-
     // Food
     food.place();
   },
   play: function() {
     // Hud
     hud.hide("title");
-    hud.show(hud.lay.play);
-
+    hud.show(hud.layouts.play);
     // Let's move
     anim.play();
   },
   end: function() {
-    this.setStatus("end");
+    game.setStatus("end");
     // Hud
     hud.show("gameOver");
     hud.lives.dead();
-
     // Stop animation
     anim.pause();
   },
   reset: function() {
-    this.setStatus("reset");
+    game.setStatus("reset");
     // Grid (clean up)
     grid.clear();
     grid.draw();
-
     // Hud
     hud.hide("gameOver");
-    hud.msg.addText("Press cursor keys to begin");
-    hud.msg.show();
-    if (hud.lives.val === 0) {
+    hud.message.addText("Press cursor keys to begin");
+    hud.message.show();
+    if (hud.lives.value === 0) {
       hud.lives.reset();
       hud.score.reset();
     }
-
     // Snake
     snake.init();
-
     // Food
     food.reset();
   }
 }
+game.start();

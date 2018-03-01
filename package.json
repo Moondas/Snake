@@ -1,6 +1,6 @@
 {
   "name": "snake",
-  "version": "1.5.10",
+  "version": "2.0.0",
   "description": "Simple Snake Game\r - Multiple collison detection such as \"hit the wall\", \"eat food\", etc.\r - Random food placing.\r - Score and lives counting.",
   "main": "index.js",
   "scripts": {
@@ -17,7 +17,10 @@
   },
   "homepage": "https://github.com/Moondas/Snake#readme",
   "dependencies": {
-    "reset-css": "^2.2.1",
-    "typescript": "^2.7.2"
+    "reset-css": "^2.2.1"
+  },
+  "devDependencies": {
+    "requirejs": "^2.3.5",
+    "typescript": "^2.7.2"    
   }
 }
