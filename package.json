@@ -1,0 +1,23 @@
+{
+  "name": "snake",
+  "version": "1.5.10",
+  "description": "Simple Snake Game\r - Multiple collison detection such as \"hit the wall\", \"eat food\", etc.\r - Random food placing.\r - Score and lives counting.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Moondas/Snake.git"
+  },
+  "author": "Peter Vigh",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Moondas/Snake/issues"
+  },
+  "homepage": "https://github.com/Moondas/Snake#readme",
+  "dependencies": {
+    "reset-css": "^2.2.1",
+    "typescript": "^2.7.2"
+  }
+}
