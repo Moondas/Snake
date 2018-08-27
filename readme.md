@@ -1,3 +1,5 @@
+[![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=Snake&metric=alert_status)](https://sonarcloud.io/dashboard?id=Snake)
+
 # Snake
 
 Simple Snake Game
@@ -17,9 +19,9 @@ Simple Snake Game
 - CSS3
   - Web Font
   - Keyframes
-- JavaScript
+- JavaScript/TS
   - OOP
 - JSBin
 
-## Live preview available at
+## Enjoy this game at
 https://moondas.github.io/Snake

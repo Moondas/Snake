@@ -4,3 +4,4 @@ scripts/*
 !scripts/*.ts
 !scripts/config.js
 package-lock.json
+.scannerwork/
